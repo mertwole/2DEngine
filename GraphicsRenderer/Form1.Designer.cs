@@ -1,4 +1,4 @@
-﻿namespace _2DEngine
+﻿namespace GraphicsRenderer
 {
     partial class Form1
     {

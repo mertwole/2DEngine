@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("2DEngine")]
+[assembly: AssemblyTitle("GraphicsRenderer")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("2DEngine")]
+[assembly: AssemblyProduct("GraphicsRenderer")]
 [assembly: AssemblyCopyright("Copyright ©  2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("3a5c2fc8-7d7b-449e-8f3f-324f76057eb5")]
+[assembly: Guid("1a9dcbbd-88e9-4a58-826d-6d77d124a0ca")]
 
 // Version information for an assembly consists of the following four values:
 //

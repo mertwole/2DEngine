@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace _2DEngine.Properties
+namespace GraphicsRenderer.Properties
 {
 
 
