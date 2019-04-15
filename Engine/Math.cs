@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static System.Math;
 
-namespace _2DEngineCore
+namespace Engine
 {
     public abstract class Math
     {
