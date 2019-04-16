@@ -96,7 +96,15 @@ namespace Engine
                 this.y = y;
             }
 
+            public static bool operator ==(Vector2 a, Vector2 b)
+            {
+                return a.x == b.x && a.y == b.y;
+            }
 
+            public static bool operator !=(Vector2 a, Vector2 b)
+            {
+                return !(a == b);
+            }
 
             public static Vector2 operator +(Vector2 first, Vector2 second)
             {
@@ -106,6 +114,11 @@ namespace Engine
             public static Vector2 operator -(Vector2 first, Vector2 second)
             {
                 return new Vector2(first.x - second.x, first.y - second.y);
+            }
+
+            public static Vector2 operator -(Vector2 vec)
+            {
+                return new Vector2(-vec.x, -vec.y);
             }
 
             public static Vector2 operator *(Vector2 vector, float k)
