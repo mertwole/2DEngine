@@ -69,8 +69,19 @@ namespace Engine
             }
         }
 
+        struct ClosestEdgeInfo
+        {
+            public int start_index;
+            public int end_index;
+            public float sqr_distance;
+            public Line edge;
+        }
+
+        const float tolerance = 0.01f;
+
         public static CollisionInfo PolygonvsPolygon(Polygon a, Polygon b)
         {
+            //GJK
             CollisionInfo info = new CollisionInfo();
 
             Vector2 GetFarthestPoint(Vector2[] polygon, Vector2 direction)
@@ -111,9 +122,15 @@ namespace Engine
 
             }
 
-            Vector2 GetVertNearestToOrigin(Line line, Vector2[] a_poly, Vector2[] b_poly)
+            Vector2 GetFarthestPointInDifference(Vector2 direction)
             {
-                Vector2 line_normal;//vector perpendicular to line & facing to origin
+                //b should be mirrored about origin so GetFarthestPoint with -dir instread of dir
+                return GetFarthestPoint(a.Verts, direction) - GetFarthestPoint(b.Verts, -direction);
+            }
+
+            Vector2 GetNormalToLineFacingOrigin(Line line)
+            {
+                Vector2 line_normal;
 
                 //get origin half space about line
                 if (line.start.x == line.end.x)
@@ -139,10 +156,18 @@ namespace Engine
                         float k_normal = -1 / k;
 
                         line_normal = t > 0 ? new Vector2(1, k_normal) : new Vector2(-1, -k_normal);
+
+                        if (k < 0)
+                            line_normal *= -1;
                     }
                 }
 
-                return GetFarthestPoint(a_poly, line_normal) - GetFarthestPoint(b_poly, -line_normal);
+                return line_normal;
+            }
+
+            Vector2 GetVertNearestToOrigin(Line line, Vector2[] a_poly, Vector2[] b_poly)
+            {
+                return GetFarthestPointInDifference(GetNormalToLineFacingOrigin(line));
             }
 
             bool SimplexContainsOrigin(List<Vector2> simplex)
@@ -158,7 +183,11 @@ namespace Engine
                     float b_k = simplex[k].x - simplex[j].x;
                     float c_k = Vector2.CrossProduct(simplex[j], simplex[k]);
 
-                    if (sgn(a_k * simplex[i].x + b_k * simplex[i].y + c_k) != sgn(c_k))//if Simplex[i] and origin
+                    float half_space_simplex_i = sgn(a_k * simplex[i].x + b_k * simplex[i].y + c_k);
+                    float half_space_origin = sgn(c_k);
+
+
+                    if (half_space_simplex_i == - half_space_origin)//if Simplex[i] and origin
                     //are in different half-spaces
                     {
                         return false;
@@ -168,23 +197,80 @@ namespace Engine
                 return true;
             }
 
+            float GetSqrDistanceFromOriginToLine(Line line)
+            {
+                //ax + by + c = 0 
+                //distance = |c|/sqrt(a^2 + b^2)
+                float a_k = line.start.y - line.end.y;
+                float b_k = line.end.x - line.start.x;
+                float c_k = Vector2.CrossProduct(line.start, line.end);
+
+                return sqr(c_k) / (sqr(a_k) + sqr(b_k));
+            }
+
             Vector2 init_direction = new Vector2(1, 0);//may be any instread of Vector2.zero
 
-            //mirroring b about origin(to get minkovski differense instread of summ)
-            //so GetFarthestPoint must get -dir instread of dir
-
             List<Vector2> Simplex = new List<Vector2>();
-            Simplex.Add(GetFarthestPoint(a.Verts, init_direction) - GetFarthestPoint(b.Verts, -init_direction));
-            Simplex.Add(GetFarthestPoint(a.Verts, -init_direction) - GetFarthestPoint(b.Verts, init_direction));
+            Simplex.Add(GetFarthestPointInDifference(init_direction));
+            Simplex.Add(GetFarthestPointInDifference(-init_direction));
             Simplex.Add(GetVertNearestToOrigin(new Line(Simplex[0], Simplex[1]), a.Verts, b.Verts));
 
             while(true)
             {
                 if (SimplexContainsOrigin(Simplex))
                 {
-                    //collision detected
+                    //EPA with Simplex
+                    ClosestEdgeInfo GetClosestEdge(List<Vector2> simplex)
+                    {
+                        int closest_edge_index = 0;
+                        float min_distance = float.MaxValue;
 
-                    break;
+                        for (int i = 0; i < simplex.Count; i++)
+                        {
+                            int j = (i + 1) % simplex.Count;
+
+                            float sqr_distance = GetSqrDistanceFromOriginToLine(new Line(Simplex[i], Simplex[j]));
+
+                            if (sqr_distance < min_distance)
+                            {
+                                min_distance = sqr_distance;
+                                closest_edge_index = i;
+                            }
+
+                        }
+
+                        return new ClosestEdgeInfo()
+                        {
+                            sqr_distance = min_distance,
+                            start_index = closest_edge_index,
+                            end_index = (closest_edge_index + 1) % simplex.Count,
+                            edge = new Line(simplex[closest_edge_index], simplex[(closest_edge_index + 1) % simplex.Count])
+                        };
+                    }
+
+                    while (true)
+                    {
+                        ClosestEdgeInfo closest_info = GetClosestEdge(Simplex);
+                        Vector2 normal = -GetNormalToLineFacingOrigin(closest_info.edge).normalized;
+                        Vector2 new_vert = GetFarthestPointInDifference(normal);
+                        float distance = new_vert * normal;
+
+                        if(abs(distance - sqrt(closest_info.sqr_distance)) < 0.0001f)
+                        {
+                            info.ContactPoints = new List<CollisionInfo.ContactPoint>();
+                            info.ContactPoints.Add(new CollisionInfo.ContactPoint()
+                            {
+                                depth = distance,
+                                normal = normal,
+                                point = GetFarthestPoint(a.Verts, normal)
+                            }
+                            );
+
+                            return info;
+                        }
+
+                        Simplex.Insert(closest_info.end_index, new_vert);
+                    }
                 }
                 
                 //determine nearest side to origin
@@ -212,7 +298,8 @@ namespace Engine
                         //needed side
                         Simplex[k] = GetVertNearestToOrigin(new Line(Simplex[i], Simplex[j]), a.Verts, b.Verts);
 
-                        if(Simplex[k] == Simplex[i] || Simplex[k] == Simplex[j])
+                        if(((Simplex[k].x == Simplex[i].x) && (Simplex[k].y == Simplex[i].y))
+                        || ((Simplex[k].x == Simplex[j].x) && (Simplex[k].y == Simplex[j].y)))
                         {
                             //no origin in minkovski difference
                             info.ContactPoints = new List<CollisionInfo.ContactPoint>();
@@ -223,11 +310,6 @@ namespace Engine
                     }
                 }
             }
-
-            //collision detected
-
-
-            return info;
         }
     }
 

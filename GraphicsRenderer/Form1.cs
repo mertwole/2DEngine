@@ -23,7 +23,7 @@ namespace GraphicsRenderer
 
             Core.CreateScene(0);
             Scene scene = Core.GetScene(0);
-
+            /*
             scene.GameObjects.Add(new GameObject());
             GameObject circle0 = scene.GameObjects[0];
             circle0.AddCircleCollider(20);
@@ -41,24 +41,38 @@ namespace GraphicsRenderer
             circle1.AddBody();
             circle1.body.MomentOfInertia = 1;
             circle1.body.Mass = 1;
+            */
+            scene.GameObjects.Add(new GameObject());
+            GameObject box = scene.GameObjects[0];
+            box.AddPolygonCollider(new Vector2[]
+            {
+                new Vector2(30, 30),
+                new Vector2(30, -30),
+                new Vector2(-30, -30),
+                new Vector2(-30, 30)
+            });
+            box.Position = new Vector2(130, 140);
+            box.isstatic = false;
+            box.AddBody();
+            box.body.MomentOfInertia = 100;
+            box.body.Mass = 1;
+            box.body.DynamicFriction = 0.7f;
+            box.body.StaticFriction = 0.7f;
+            //box.body.CenterOfMass_local = new Vector2(10, -10);
 
             scene.GameObjects.Add(new GameObject());
-            GameObject platform = scene.GameObjects[2];
+            GameObject platform = scene.GameObjects[1];
             platform.AddPolygonCollider(new Vector2[]
             {
-                new Vector2(0, 0),
                 new Vector2(200, 0),
                 new Vector2(200, 90),
-                new Vector2(100, 10),
-                new Vector2(90, 10),
                 new Vector2(80, 70),
-                new Vector2(70, 10),
                 new Vector2(0, 10)
             });
             platform.isstatic = true;
             platform.AddBody();
-            platform.body.MomentOfInertia = 1;
-            platform.body.Mass = 0;
+            platform.body.MomentOfInertia = 0;
+            platform.body.Mass = 0;      
 
             //*******
         }
@@ -77,6 +91,19 @@ namespace GraphicsRenderer
 
             Invalidate();
 
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            timer1.Enabled = !timer1.Enabled;
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            Core.GetScene(0).Tick(0.05f);
+            GameObject.Draw(pictureBox1);
+
+            Invalidate();
         }
     }
 }

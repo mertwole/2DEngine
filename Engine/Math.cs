@@ -88,22 +88,12 @@ namespace Engine
 
             public float magnitude { get { return sqrt(sqrMagnitude); } }
 
-            public Vector2 normalized { get { return (x == 0 && y == 0)? Vector2.zero : this / magnitude; } }
+            public Vector2 normalized { get { return (x == 0 && y == 0)? zero : this / magnitude; } }
 
             public Vector2(float x, float y)
             {
                 this.x = x;
                 this.y = y;
-            }
-
-            public static bool operator ==(Vector2 a, Vector2 b)
-            {
-                return a.x == b.x && a.y == b.y;
-            }
-
-            public static bool operator !=(Vector2 a, Vector2 b)
-            {
-                return !(a == b);
             }
 
             public static Vector2 operator +(Vector2 first, Vector2 second)

@@ -40,6 +40,18 @@ namespace Engine
 
         public float AngularVelocity;
         public float Torque;
-        public float MomentOfInertia;
+
+        float momentofinertia;// 0 means infinity
+        float inv_momentofinertia;
+        public float Inv_MomentOfInertia { get { return inv_momentofinertia; } }
+        public float MomentOfInertia
+        {
+            get { return momentofinertia; }
+            set
+            {
+                momentofinertia = value;
+                inv_momentofinertia = (momentofinertia == 0 ? 0 : 1 / momentofinertia); // 1/infinity == 0
+            }
+        }
     }
 }

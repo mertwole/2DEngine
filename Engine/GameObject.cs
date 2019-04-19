@@ -41,6 +41,11 @@ namespace Engine
 
         public static void Draw(PictureBox picturebox)
         {
+            foreach (var go in Core.GetScene(0).GameObjects)
+            {
+                go.collider.UpdatePosAndRotation(go.Position, go.Rotation);
+            }
+
             Bitmap img = new Bitmap(picturebox.Width, picturebox.Height);
             Graphics g = Graphics.FromImage(img);
             g.Clear(Color.Black);
