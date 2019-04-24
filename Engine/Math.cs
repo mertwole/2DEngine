@@ -96,6 +96,16 @@ namespace Engine
                 this.y = y;
             }
 
+            public static bool operator ==(Vector2 first, Vector2 second)
+            {
+                return (first.x == second.x) && (first.y == second.y);
+            }
+
+            public static bool operator !=(Vector2 first, Vector2 second)
+            {
+                return !(first == second);
+            }
+
             public static Vector2 operator +(Vector2 first, Vector2 second)
             {
                 return new Vector2(first.x + second.x, first.y + second.y);

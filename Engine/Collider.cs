@@ -44,7 +44,7 @@ namespace Engine
 
             for(int i = 0; i < Verts.Length; i++)
             {
-                Verts[i] = rot_matrix * origin_verts[i] + GameObjectPos;
+                Verts[i] = rot_matrix * (origin_verts[i] - gameobject.body.CenterOfMass_local) + GameObjectPos + gameobject.body.CenterOfMass_local;
             }
         }
 

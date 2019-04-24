@@ -15,6 +15,8 @@ namespace GraphicsRenderer
 {
     public partial class Form1 : Form
     {
+        Scene scene;
+
         public Form1()
         {
             InitializeComponent();
@@ -22,58 +24,57 @@ namespace GraphicsRenderer
             //testbed
 
             Core.CreateScene(0);
-            Scene scene = Core.GetScene(0);
-            /*
-            scene.GameObjects.Add(new GameObject());
-            GameObject circle0 = scene.GameObjects[0];
-            circle0.AddCircleCollider(20);
-            circle0.Position = new Vector2(30, 30);
-            circle0.isstatic = true;
-            circle0.AddBody();
-            circle0.body.MomentOfInertia = 1;
-            circle0.body.Mass = 0;
+            scene = Core.GetScene(0);
 
             scene.GameObjects.Add(new GameObject());
-            GameObject circle1 = scene.GameObjects[1];
-            circle1.AddCircleCollider(20);
-            circle1.Position = new Vector2(32, 80);
-            circle1.isstatic = false;
-            circle1.AddBody();
-            circle1.body.MomentOfInertia = 1;
-            circle1.body.Mass = 1;
-            */
-            scene.GameObjects.Add(new GameObject());
-            GameObject box = scene.GameObjects[0];
-            box.AddPolygonCollider(new Vector2[]
-            {
-                new Vector2(30, 30),
-                new Vector2(30, -30),
-                new Vector2(-30, -30),
-                new Vector2(-30, 30)
-            });
-            box.Position = new Vector2(130, 140);
-            box.isstatic = false;
-            box.AddBody();
-            box.body.MomentOfInertia = 100;
-            box.body.Mass = 1;
-            box.body.DynamicFriction = 0.7f;
-            box.body.StaticFriction = 0.7f;
-            //box.body.CenterOfMass_local = new Vector2(10, -10);
-
-            scene.GameObjects.Add(new GameObject());
-            GameObject platform = scene.GameObjects[1];
+            GameObject platform = scene.GameObjects[scene.GameObjects.Count - 1];
             platform.AddPolygonCollider(new Vector2[]
             {
-                new Vector2(200, 0),
-                new Vector2(200, 90),
-                new Vector2(80, 70),
-                new Vector2(0, 10)
+                new Vector2(10, 10),
+                new Vector2(10, 50),
+                new Vector2(500, 50),
+                new Vector2(500, 10)
             });
             platform.isstatic = true;
             platform.AddBody();
             platform.body.MomentOfInertia = 0;
-            platform.body.Mass = 0;      
+            platform.body.Mass = 0;
+            platform.body.StaticFriction = 1.8f;
+            platform.body.DynamicFriction = 1.8f;
+            platform.body.Bouncity = 0;
+            
+            scene.GameObjects.Add(new GameObject());
+            GameObject wall_left = scene.GameObjects[scene.GameObjects.Count - 1];
+            wall_left.AddPolygonCollider(new Vector2[]
+            {
+                new Vector2(500, 200),
+                new Vector2(500, 50),
+                new Vector2(510, 50),
+                new Vector2(510, 200)
+            });
+            wall_left.isstatic = true;
+            wall_left.AddBody();
+            wall_left.body.MomentOfInertia = 0;
+            wall_left.body.Mass = 0;
+            wall_left.body.StaticFriction = 0.2f;
+            wall_left.body.DynamicFriction = 0.2f;
 
+            scene.GameObjects.Add(new GameObject());
+            GameObject wall_right = scene.GameObjects[scene.GameObjects.Count - 1];
+            wall_right.AddPolygonCollider(new Vector2[]
+            {
+                new Vector2(0, 200),
+                new Vector2(0, 10),
+                new Vector2(10, 10),
+                new Vector2(10, 200)
+            });
+            wall_right.isstatic = true;
+            wall_right.AddBody();
+            wall_right.body.MomentOfInertia = 0;
+            wall_right.body.Mass = 0;
+            wall_right.body.StaticFriction = 0.2f;
+            wall_right.body.DynamicFriction = 0.2f;
+            
             //*******
         }
 
@@ -86,11 +87,11 @@ namespace GraphicsRenderer
 
         private void button2_Click(object sender, EventArgs e)
         {
-            Core.GetScene(0).Tick(0.05f);
+            Core.GetScene(0).Tick(0.01f);
+
             GameObject.Draw(pictureBox1);
 
             Invalidate();
-
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -100,10 +101,100 @@ namespace GraphicsRenderer
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            Core.GetScene(0).Tick(0.05f);
+            for (int i = 0; i < 10; i++)
+            {
+                Core.GetScene(0).Tick(0.01f);
+            }
+            
             GameObject.Draw(pictureBox1);
 
             Invalidate();
+        }
+
+        bool poly_creating = false;
+        List<Vector2> new_poly = new List<Vector2>();
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            if(!poly_creating)
+            {
+                new_poly = new List<Vector2>();
+            }
+            else
+            {
+                scene.GameObjects.Add(new GameObject());
+                GameObject poly = scene.GameObjects[scene.GameObjects.Count - 1];
+                poly.AddPolygonCollider(new_poly.ToArray());
+                poly.Position = Vector2.zero;
+                poly.isstatic = false;
+                poly.AddBody();
+                poly.body.MomentOfInertia = 100;
+                poly.body.Mass = 1;
+                poly.body.DynamicFriction = 0;
+                poly.body.StaticFriction = 0;
+                poly.body.Bouncity = 0;
+                poly.body.CenterOfMass_local = GetPolyCOM(new_poly);
+
+                float moment_inertia = 0;
+
+                for(int i = 0; i < new_poly.Count; i++)
+                {
+                    moment_inertia += (poly.body.CenterOfMass_local - new_poly[i]).sqrMagnitude;
+                }
+
+                poly.body.MomentOfInertia = moment_inertia / 5;
+
+            }
+
+            poly_creating = !poly_creating;
+        }
+
+        Vector2 GetPolyCOM(List<Vector2> poly)
+        {
+            Vector2 com = Vector2.zero;
+
+            for(int i = 0; i < poly.Count; i++)
+            {
+                com += poly[i];
+            }
+
+            com /= poly.Count;
+
+            return com;
+        }
+
+        private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (poly_creating)
+            {
+                new_poly.Add(new Vector2(e.X, pictureBox1.Height - e.Y));
+            }
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            scene.GameObjects.Add(new GameObject());
+            GameObject box = scene.GameObjects[scene.GameObjects.Count - 1];
+            box.AddPolygonCollider(new Vector2[]
+            {
+                new Vector2(160, 170),
+                new Vector2(160, 110),
+                new Vector2(100, 110)
+            });
+            box.Position = Vector2.zero;
+            box.isstatic = false;
+            box.AddBody();
+            box.body.MomentOfInertia = 100;
+            box.body.Mass = 1;
+            box.body.DynamicFriction = 0;
+            box.body.StaticFriction = 0;
+            box.body.Bouncity = 0;
+            box.body.CenterOfMass_local = GetPolyCOM(new Vector2[]
+            {
+                new Vector2(160, 170),
+                new Vector2(160, 110),
+                new Vector2(100, 110)
+            }.ToList());
         }
     }
 }

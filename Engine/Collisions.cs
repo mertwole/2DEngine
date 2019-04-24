@@ -14,12 +14,14 @@ namespace Engine
             public Vector2 point;
             public Vector2 normal;
             public float depth;
+            public float ImpulseScalar;
 
             public ContactPoint(Vector2 _point, Vector2 _normal, float _depth)
             {
                 point = _point;
                 normal = _normal;
                 depth = _depth;
+                ImpulseScalar = 0;
             }
         }
 
@@ -77,49 +79,50 @@ namespace Engine
             public Line edge;
         }
 
-        const float tolerance = 0.01f;
+        const float tolerance = 0.0001f;
 
         public static CollisionInfo PolygonvsPolygon(Polygon a, Polygon b)
         {
             //GJK
             CollisionInfo info = new CollisionInfo();
 
-            Vector2 GetFarthestPoint(Vector2[] polygon, Vector2 direction)
+            int GetFarthestPointIndex(Vector2[] polygon, Vector2 direction)
             {
-                Vector2 out_vector;
+                int index = 0;
 
                 if (direction.y == 0)//x coord check
                 {
-                    out_vector = polygon[0];
-
-                    foreach(var vert in polygon)
+                    for(int vert = 0; vert < polygon.Length; vert++)
                     {
-                        if(sgn(vert.x - out_vector.x) == sgn(direction.x))//if direction == right searching max(x) else min
+                        if (sgn(polygon[vert].x - polygon[index].x) == sgn(direction.x))//if direction == right searching max(x) else min
                         {
-                            out_vector = vert;
+                            index = vert;
                         }
                     }
 
-                    return out_vector;
+                    return index;
                 }
 
                 float k = -direction.x / direction.y; //perpendicular direction angular coefficient
                 //y = kx + b line equation. we find line equation for each point and b 
                 //is the intersection point of this line with Oy. Extremum of b means that there is the 
                 //ultimate point in the direction, perpendicular to this line i.e. "direction" vector
-                out_vector = polygon[0];
 
-                foreach(var vert in polygon)
+                for (int vert = 0; vert < polygon.Length; vert++)
                 {
-                    if(sgn((vert.y - vert.x * k) - (out_vector.y - out_vector.x * k)) == 
+                    if (sgn((polygon[vert].y - polygon[vert].x * k) - (polygon[index].y - polygon[index].x * k)) ==
                         sgn(direction.y))//if top direction searching max(b) else min(b)
                     {
-                        out_vector = vert;
+                        index = vert;
                     }
                 }
 
-                return out_vector;
+                return index;
+            }
 
+            Vector2 GetFarthestPoint(Vector2[] polygon, Vector2 direction)
+            {
+                return polygon[GetFarthestPointIndex(polygon, direction)];
             }
 
             Vector2 GetFarthestPointInDifference(Vector2 direction)
@@ -208,6 +211,39 @@ namespace Engine
                 return sqr(c_k) / (sqr(a_k) + sqr(b_k));
             }
 
+            float GetSqrDistanceFromPointToLine(Vector2 point, Line line)
+            {
+                //ax + by + c = 0 
+                //distance = |a * x1 + b * y1 + c| / sqrt(a ^ 2 + b ^ 2)
+                float a_k = line.start.y - line.end.y;
+                float b_k = line.end.x - line.start.x;
+                float c_k = Vector2.CrossProduct(line.start, line.end);
+
+                return sqr(a_k * point.x + b_k * point.y + c_k) / (sqr(a_k) + sqr(b_k));
+            }
+
+            bool PolygonContainsPoint(Vector2[] poly, Vector2 point)
+            {
+                for(int i = 0; i < poly.Length; i++)
+                {
+                    int j = (i + 1) % poly.Length;
+
+                    float a_k = poly[i].y - poly[j].y;
+                    float b_k = poly[j].x - poly[i].x;
+                    float c_k = Vector2.CrossProduct(poly[i], poly[j]);
+
+                    int k = (i + 2) % poly.Length;
+
+                    float vert_halfspace = sgn(a_k * poly[k].x + b_k * poly[k].y + c_k);
+                    float point_halfspace = sgn(a_k * point.x + b_k * point.y + c_k);
+
+                    if (point_halfspace == -vert_halfspace)
+                        return false;
+                }
+
+                return true;
+            }
+
             Vector2 init_direction = new Vector2(1, 0);//may be any instread of Vector2.zero
 
             List<Vector2> Simplex = new List<Vector2>();
@@ -255,24 +291,177 @@ namespace Engine
                         Vector2 new_vert = GetFarthestPointInDifference(normal);
                         float distance = new_vert * normal;
 
-                        if(abs(distance - sqrt(closest_info.sqr_distance)) < 0.0001f)
-                        {
+                        if (abs(distance - sqrt(closest_info.sqr_distance)) < tolerance)
+                        { 
                             info.ContactPoints = new List<CollisionInfo.ContactPoint>();
-                            info.ContactPoints.Add(new CollisionInfo.ContactPoint()
-                            {
-                                depth = distance,
-                                normal = normal,
-                                point = GetFarthestPoint(a.Verts, normal)
-                            }
-                            );
 
-                            return info;
+                            bool flip = false;
+
+                            int incident_edge_start = GetFarthestPointIndex(a.Verts, normal);
+                            int incident_edge_end = (incident_edge_start + 1) % a.Verts.Length;
+
+                            if (!(abs((a.Verts[incident_edge_start] - a.Verts[incident_edge_end]) * normal) < tolerance))
+                            {
+                                incident_edge_end = (incident_edge_start - 1 + a.Verts.Length) % a.Verts.Length;
+                            }
+
+                            if (!(abs((a.Verts[incident_edge_start] - a.Verts[incident_edge_end]) * normal) < tolerance))
+                            {
+                                flip = true;
+
+                                incident_edge_start = GetFarthestPointIndex(b.Verts, -normal);
+                                incident_edge_end = (incident_edge_start + 1) % b.Verts.Length;
+
+                                if (!(abs((b.Verts[incident_edge_start] - b.Verts[incident_edge_end]) * normal) < tolerance))
+                                {
+                                    incident_edge_end = (incident_edge_start - 1 + b.Verts.Length) % b.Verts.Length;
+                                }
+                            }
+
+                            Line incident_edge;
+
+                            if(!flip)
+                            {//a
+                                incident_edge = new Line(a.Verts[incident_edge_start], a.Verts[incident_edge_end]);
+                            }
+                            else
+                            {//b
+                                incident_edge = new Line(b.Verts[incident_edge_start], b.Verts[incident_edge_end]);
+                            }
+
+
+                            if (!flip)
+                            {//a
+                                int b_farthest = GetFarthestPointIndex(b.Verts, -normal);
+                                int b_farthest_left_neighb = (b_farthest + 1) % b.Verts.Length;
+                                int b_farthest_right_neighb = (b_farthest - 1 + b.Verts.Length) % b.Verts.Length;
+
+                                info.ContactPoints.Add(new CollisionInfo.ContactPoint()
+                                {
+                                    depth = distance,
+                                    normal = normal,
+                                    point = b.Verts[b_farthest] + normal * distance
+
+                                });
+
+                                bool a_contains_left = PolygonContainsPoint(a.Verts, b.Verts[b_farthest_left_neighb]);
+                                bool a_contains_right = PolygonContainsPoint(a.Verts, b.Verts[b_farthest_right_neighb]);
+
+                                if (a_contains_left && a_contains_right)
+                                {
+                                    float left_sqr_dist = GetSqrDistanceFromPointToLine(b.Verts[b_farthest_left_neighb], incident_edge);
+                                    float right_sqr_dist = GetSqrDistanceFromPointToLine(b.Verts[b_farthest_right_neighb], incident_edge);
+                                    int b_almostfarthest = (right_sqr_dist > left_sqr_dist) ? b_farthest_right_neighb : b_farthest_left_neighb;
+                                    float b_almost_farthest_distance = sqrt(max(right_sqr_dist, left_sqr_dist));
+
+                                    info.ContactPoints.Add(new CollisionInfo.ContactPoint()
+                                    {
+                                        depth = b_almost_farthest_distance,
+                                        normal = normal,
+                                        point = b.Verts[b_almostfarthest] + normal * b_almost_farthest_distance
+
+                                    });
+                                }
+                                else if (!a_contains_left && !a_contains_right)
+                                {
+                                    return info;
+                                }
+                                else if (a_contains_left)
+                                {
+                                    float dist = sqrt(GetSqrDistanceFromPointToLine(b.Verts[b_farthest_left_neighb], incident_edge));
+
+                                    info.ContactPoints.Add(new CollisionInfo.ContactPoint()
+                                    {
+                                        depth = dist,
+                                        normal = normal,
+                                        point = b.Verts[b_farthest_left_neighb] + normal * dist
+
+                                    });
+                                }
+                                else
+                                {
+                                    float dist = sqrt(GetSqrDistanceFromPointToLine(b.Verts[b_farthest_right_neighb], incident_edge));
+
+                                    info.ContactPoints.Add(new CollisionInfo.ContactPoint()
+                                    {
+                                        depth = dist,
+                                        normal = normal,
+                                        point = b.Verts[b_farthest_right_neighb] + normal * dist
+
+                                    });
+                                }
+
+                                return info;
+                            }
+                            else
+                            {//b
+                                int a_farthest = GetFarthestPointIndex(a.Verts, normal);
+                                int a_farthest_left_neighb = (a_farthest + 1) % a.Verts.Length;
+                                int a_farthest_right_neighb = (a_farthest - 1 + a.Verts.Length) % a.Verts.Length;
+
+                                info.ContactPoints.Add(new CollisionInfo.ContactPoint()
+                                {
+                                    depth = distance,
+                                    normal = normal,
+                                    point = a.Verts[a_farthest] + normal * distance
+
+                                });
+
+                                bool b_contains_left = PolygonContainsPoint(b.Verts, a.Verts[a_farthest_left_neighb]);
+                                bool b_contains_right = PolygonContainsPoint(b.Verts, a.Verts[a_farthest_right_neighb]);
+
+                                if (b_contains_left && b_contains_right)
+                                {
+                                    float left_sqr_dist = GetSqrDistanceFromPointToLine(a.Verts[a_farthest_left_neighb], incident_edge);
+                                    float right_sqr_dist = GetSqrDistanceFromPointToLine(a.Verts[a_farthest_right_neighb], incident_edge);
+                                    int a_almostfarthest = (right_sqr_dist > left_sqr_dist) ? a_farthest_right_neighb : a_farthest_left_neighb;
+                                    float a_almost_farthest_distance = sqrt(max(right_sqr_dist, left_sqr_dist));
+
+                                    info.ContactPoints.Add(new CollisionInfo.ContactPoint()
+                                    {
+                                        depth = a_almost_farthest_distance,
+                                        normal = normal,
+                                        point = a.Verts[a_almostfarthest] + normal * a_almost_farthest_distance
+
+                                    });
+                                }
+                                else if (!b_contains_left && !b_contains_right)
+                                {
+                                    return info;
+                                }
+                                else if (b_contains_left)
+                                {
+                                    float dist = sqrt(GetSqrDistanceFromPointToLine(a.Verts[a_farthest_left_neighb], incident_edge));
+
+                                    info.ContactPoints.Add(new CollisionInfo.ContactPoint()
+                                    {
+                                        depth = dist,
+                                        normal = normal,
+                                        point = a.Verts[a_farthest_left_neighb] + normal * dist
+
+                                    });
+                                }
+                                else
+                                {
+                                    float dist = sqrt(GetSqrDistanceFromPointToLine(a.Verts[a_farthest_right_neighb], incident_edge));
+
+                                    info.ContactPoints.Add(new CollisionInfo.ContactPoint()
+                                    {
+                                        depth = dist,
+                                        normal = normal,
+                                        point = a.Verts[a_farthest_right_neighb] + normal * dist
+
+                                    });
+                                }
+
+                                return info;
+                            }
                         }
 
                         Simplex.Insert(closest_info.end_index, new_vert);
                     }
                 }
-                
+       
                 //determine nearest side to origin
                 //
                 //if we have triangle the nearest side to origin is side such that another vertex of simplex

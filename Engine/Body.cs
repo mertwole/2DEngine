@@ -11,9 +11,9 @@ namespace Engine
     {
         public delegate float Calculation(float x, float y);
 
-        public static Calculation CalculateBouncity = (x, y) => x + y / 2;
-        public static Calculation CalculateStaticFriction = (x, y) => x + y / 2;
-        public static Calculation CalculateDynamicFriction = (x, y) => x + y / 2;
+        public static Calculation CalculateBouncity = (x, y) => (x + y) / 2;
+        public static Calculation CalculateStaticFriction = (x, y) => (x + y) / 2;
+        public static Calculation CalculateDynamicFriction = (x, y) => (x + y) / 2;
 
         public float Bouncity = 0;
 
