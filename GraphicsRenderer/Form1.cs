@@ -41,7 +41,7 @@ namespace GraphicsRenderer
             platform.body.Mass = 0;
             platform.body.StaticFriction = 1.8f;
             platform.body.DynamicFriction = 1.8f;
-            platform.body.Bouncity = 0;
+            platform.body.Bouncity = 3;
             
             scene.GameObjects.Add(new GameObject());
             GameObject wall_left = scene.GameObjects[scene.GameObjects.Count - 1];
@@ -169,32 +169,6 @@ namespace GraphicsRenderer
             {
                 new_poly.Add(new Vector2(e.X, pictureBox1.Height - e.Y));
             }
-        }
-
-        private void button5_Click(object sender, EventArgs e)
-        {
-            scene.GameObjects.Add(new GameObject());
-            GameObject box = scene.GameObjects[scene.GameObjects.Count - 1];
-            box.AddPolygonCollider(new Vector2[]
-            {
-                new Vector2(160, 170),
-                new Vector2(160, 110),
-                new Vector2(100, 110)
-            });
-            box.Position = Vector2.zero;
-            box.isstatic = false;
-            box.AddBody();
-            box.body.MomentOfInertia = 100;
-            box.body.Mass = 1;
-            box.body.DynamicFriction = 0;
-            box.body.StaticFriction = 0;
-            box.body.Bouncity = 0;
-            box.body.CenterOfMass_local = GetPolyCOM(new Vector2[]
-            {
-                new Vector2(160, 170),
-                new Vector2(160, 110),
-                new Vector2(100, 110)
-            }.ToList());
         }
     }
 }
