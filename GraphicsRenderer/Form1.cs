@@ -39,9 +39,9 @@ namespace GraphicsRenderer
             platform.AddBody();
             platform.body.MomentOfInertia = 0;
             platform.body.Mass = 0;
-            platform.body.StaticFriction = 1.8f;
-            platform.body.DynamicFriction = 1.8f;
-            platform.body.Bouncity = 3;
+            platform.body.StaticFriction = 0;
+            platform.body.DynamicFriction = 0;
+            platform.body.Bouncity = 0;
             
             scene.GameObjects.Add(new GameObject());
             GameObject wall_left = scene.GameObjects[scene.GameObjects.Count - 1];
@@ -74,7 +74,21 @@ namespace GraphicsRenderer
             wall_right.body.Mass = 0;
             wall_right.body.StaticFriction = 0.2f;
             wall_right.body.DynamicFriction = 0.2f;
-            
+
+
+
+
+            scene.GameObjects.Add(new GameObject());
+            GameObject circle = scene.GameObjects[scene.GameObjects.Count - 1];
+            circle.AddCircleCollider(10);
+            circle.Position = new Vector2(100, 100);
+            circle.isstatic = false;
+            circle.AddBody();
+            circle.body.MomentOfInertia = 0;
+            circle.body.Mass = 1;
+            circle.body.StaticFriction = 0;
+            circle.body.DynamicFriction = 0;
+
             //*******
         }
 

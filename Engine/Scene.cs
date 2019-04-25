@@ -34,7 +34,7 @@ namespace Engine
                     go.body.Velocity += go.body.Inv_mass * go.body.Force * dt;
                     go.Position += go.body.Velocity * dt;
 
-                    go.body.AngularVelocity += go.body.Torque * (1 / go.body.MomentOfInertia) * dt;
+                    go.body.AngularVelocity += go.body.Torque * go.body.Inv_MomentOfInertia * dt;
                     go.Rotation += go.body.AngularVelocity * dt;
 
                     go.collider.UpdatePosAndRotation(go.Position, go.Rotation);

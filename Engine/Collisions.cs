@@ -51,7 +51,25 @@ namespace Engine
 
         public static CollisionInfo CirclevsPolygon(Circle a, Polygon b)
         {
-            CollisionInfo info = PolygonvsCircle(b, a);
+            CollisionInfo info = new CollisionInfo();
+
+            GJKoutput GJKoutput = GJK(a, b);
+
+            if (!GJKoutput.result)
+                return new CollisionInfo() { ContactPoints = new List<CollisionInfo.ContactPoint>() };
+
+            EPAoutput EPAoutput = EPA(GJKoutput.simplex, a, b);
+
+            Vector2 cp = GetFarthestPoint(a, EPAoutput.normal);
+
+            info.ContactPoints.Add(new CollisionInfo.ContactPoint() { depth = EPAoutput.distance, normal = EPAoutput.normal, point = cp });
+
+            return info;
+        }
+
+        public static CollisionInfo PolygonvsCircle(Polygon a, Circle b)
+        {
+            CollisionInfo info = CirclevsPolygon(b, a);
 
             if (info.ContactPoints.Count != 0)
             {
@@ -65,11 +83,6 @@ namespace Engine
             }
 
             return info;
-        }
-
-        public static CollisionInfo PolygonvsCircle(Polygon a, Circle b)
-        {
-            return new CollisionInfo();
         }
 
         struct Line
@@ -519,6 +532,12 @@ namespace Engine
                     {
                         //needed side
                         Simplex[k] = GetVertNearestToOrigin(new Line(Simplex[i], Simplex[j]));
+
+                        if (Simplex[k] * GetNormalToLineFacingOrigin(new Line(Simplex[i], Simplex[j])) <= 0)
+                        {
+                            //no origin in minkovski difference
+                            return new GJKoutput() { result = false };
+                        }
 
                         if (((Simplex[k].x == Simplex[i].x) && (Simplex[k].y == Simplex[i].y))
                         || ((Simplex[k].x == Simplex[j].x) && (Simplex[k].y == Simplex[j].y)))
