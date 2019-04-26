@@ -11,6 +11,47 @@ namespace Engine
     {
         public List<GameObject> GameObjects = new List<GameObject>();
 
+        struct DestroyBounds
+        {
+            public bool DestroyPoint(Vector2 point)
+            {
+                if (left != null && point.x < left)
+                    return true;
+
+                if (right != null && point.x > right)
+                    return true;
+
+                if (top != null && point.y > top)
+                    return true;
+
+                if (point.y < bottom)
+                    return true;
+
+                return false;
+            }
+
+            public DestroyBounds(float? left, float? right, float? top, float bottom)
+            {
+                this.left = left;
+                this.right = right;
+                this.top = top;
+                this.bottom = bottom;
+            }
+
+            float? left;
+            float? right;
+            float? top;
+            float bottom;
+
+        }
+
+        DestroyBounds destroybounds = new DestroyBounds();
+
+        public void SetDestroyBounds(float? left, float? right, float? top, float bottom)
+        {
+            destroybounds = new DestroyBounds(left, right, top, bottom);
+        }
+
         public void Tick(float dt)
         {
             foreach (GameObject go in GameObjects)
@@ -23,6 +64,8 @@ namespace Engine
             ApplyForces(dt);
 
             ClearForces();
+
+            DestroyObjectsOutsideDestroybounds();
         }
 
         void ApplyForces(float dt)
@@ -73,7 +116,14 @@ namespace Engine
             }
         }
 
-        
+        void DestroyObjectsOutsideDestroybounds()
+        {
+            for(int i = 0; i < GameObjects.Count; i++)
+            {
+                if (!GameObjects[i].isstatic && destroybounds.DestroyPoint(GameObjects[i].Position))
+                    GameObjects.RemoveAt(i);
+            }
+        }
 
     }
 }

@@ -25,6 +25,7 @@ namespace GraphicsRenderer
 
             Core.CreateScene(0);
             scene = Core.GetScene(0);
+            scene.SetDestroyBounds(null, null, null, -10000);
 
             scene.GameObjects.Add(new GameObject());
             GameObject platform = scene.GameObjects[scene.GameObjects.Count - 1];
