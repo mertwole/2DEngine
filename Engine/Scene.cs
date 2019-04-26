@@ -68,7 +68,7 @@ namespace Engine
             {
                 for(int b = a + 1; b < GameObjects.Count; b++)
                 {
-                    Resolver.BroadPhase(GameObjects[a], GameObjects[b]);//all pairs without repeats
+                    BroadPhase.Broad_Phase(GameObjects[a], GameObjects[b]);//all pairs without repeats
                 }
             }
         }

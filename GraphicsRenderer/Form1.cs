@@ -42,7 +42,7 @@ namespace GraphicsRenderer
             platform.body.StaticFriction = 0;
             platform.body.DynamicFriction = 0;
             platform.body.Bouncity = 0;
-            
+            /*
             scene.GameObjects.Add(new GameObject());
             GameObject wall_left = scene.GameObjects[scene.GameObjects.Count - 1];
             wall_left.AddPolygonCollider(new Vector2[]
@@ -74,10 +74,7 @@ namespace GraphicsRenderer
             wall_right.body.Mass = 0;
             wall_right.body.StaticFriction = 0.2f;
             wall_right.body.DynamicFriction = 0.2f;
-
-
-
-
+            
             scene.GameObjects.Add(new GameObject());
             GameObject circle = scene.GameObjects[scene.GameObjects.Count - 1];
             circle.AddCircleCollider(10);
@@ -88,7 +85,7 @@ namespace GraphicsRenderer
             circle.body.Mass = 1;
             circle.body.StaticFriction = 0;
             circle.body.DynamicFriction = 0;
-
+            */
             //*******
         }
 
@@ -115,10 +112,7 @@ namespace GraphicsRenderer
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            for (int i = 0; i < 10; i++)
-            {
-                Core.GetScene(0).Tick(0.01f);
-            }
+            Core.GetScene(0).Tick(0.01f);
             
             GameObject.Draw(pictureBox1);
 
@@ -142,8 +136,7 @@ namespace GraphicsRenderer
                 poly.Position = Vector2.zero;
                 poly.isstatic = false;
                 poly.AddBody();
-                poly.body.MomentOfInertia = 100;
-                poly.body.Mass = 1;
+                poly.body.Mass = GetPolyArea(new_poly) / 10000;
                 poly.body.DynamicFriction = 0;
                 poly.body.StaticFriction = 0;
                 poly.body.Bouncity = 0;
@@ -156,7 +149,7 @@ namespace GraphicsRenderer
                     moment_inertia += (poly.body.CenterOfMass_local - new_poly[i]).sqrMagnitude;
                 }
 
-                poly.body.MomentOfInertia = moment_inertia / 5;
+                poly.body.MomentOfInertia = moment_inertia / new_poly.Count;
 
             }
 
@@ -175,6 +168,18 @@ namespace GraphicsRenderer
             com /= poly.Count;
 
             return com;
+        }
+
+        float GetPolyArea(List<Vector2> poly)
+        {
+            float area = 0;
+
+            for(int i = 0; i < poly.Count; i++)
+            {
+                area += Vector2.CrossProduct(poly[i], poly[(i + 1) % poly.Count]); 
+            }
+
+            return abs(area) / 2;
         }
 
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)

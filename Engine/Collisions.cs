@@ -14,14 +14,12 @@ namespace Engine
             public Vector2 point;
             public Vector2 normal;
             public float depth;
-            public float ImpulseScalar;
 
             public ContactPoint(Vector2 _point, Vector2 _normal, float _depth)
             {
                 point = _point;
                 normal = _normal;
                 depth = _depth;
-                ImpulseScalar = 0;
             }
         }
 
@@ -30,6 +28,12 @@ namespace Engine
 
     class Collisions
     {
+        public static bool AABBvsAABB(AABB a, AABB b)
+        {
+            return !(a.RightTop.x < b.LeftBottom.x || a.LeftBottom.x > b.RightTop.x ||
+                    a.LeftBottom.y > b.RightTop.y || a.RightTop.y < b.LeftBottom.y);
+        }
+
         public static CollisionInfo CirclevsCircle(Circle a, Circle b)
         {
             CollisionInfo info = new CollisionInfo();
