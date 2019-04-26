@@ -22,7 +22,6 @@ namespace GraphicsRenderer
             InitializeComponent();
 
             //testbed
-
             Core.CreateScene(0);
             scene = Core.GetScene(0);
             scene.SetDestroyBounds(null, null, null, -10000);
@@ -43,7 +42,7 @@ namespace GraphicsRenderer
             platform.body.StaticFriction = 0;
             platform.body.DynamicFriction = 0;
             platform.body.Bouncity = 0;
-            /*
+            
             scene.GameObjects.Add(new GameObject());
             GameObject wall_left = scene.GameObjects[scene.GameObjects.Count - 1];
             wall_left.AddPolygonCollider(new Vector2[]
@@ -75,18 +74,6 @@ namespace GraphicsRenderer
             wall_right.body.Mass = 0;
             wall_right.body.StaticFriction = 0.2f;
             wall_right.body.DynamicFriction = 0.2f;
-            
-            scene.GameObjects.Add(new GameObject());
-            GameObject circle = scene.GameObjects[scene.GameObjects.Count - 1];
-            circle.AddCircleCollider(10);
-            circle.Position = new Vector2(100, 100);
-            circle.isstatic = false;
-            circle.AddBody();
-            circle.body.MomentOfInertia = 0;
-            circle.body.Mass = 1;
-            circle.body.StaticFriction = 0;
-            circle.body.DynamicFriction = 0;
-            */
             //*******
         }
 
@@ -128,6 +115,7 @@ namespace GraphicsRenderer
             if(!poly_creating)
             {
                 new_poly = new List<Vector2>();
+                button4.Text = "finish poly creating";
             }
             else
             {
@@ -151,7 +139,7 @@ namespace GraphicsRenderer
                 }
 
                 poly.body.MomentOfInertia = moment_inertia / new_poly.Count;
-
+                button4.Text = "start poly creating";
             }
 
             poly_creating = !poly_creating;
@@ -188,6 +176,52 @@ namespace GraphicsRenderer
             if (poly_creating)
             {
                 new_poly.Add(new Vector2(e.X, pictureBox1.Height - e.Y));
+            }
+
+            if(circle_creating)
+            {
+                if(circle_point_0 == Vector2.zero)
+                {
+                    circle_point_0 = new Vector2(e.X, pictureBox1.Height - e.Y);
+                }
+                else
+                {
+                    circle_point_1 = new Vector2(e.X, pictureBox1.Height - e.Y);
+                }
+            }
+        }
+
+        bool circle_creating = false;
+        Vector2 circle_point_0 = Vector2.zero;
+        Vector2 circle_point_1 = Vector2.zero;
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            if(!circle_creating)
+            {
+                circle_creating = true;
+
+                circle_point_0 = Vector2.zero;
+                circle_point_1 = Vector2.zero;
+
+                button5.Text = "finish circle creating";
+            }
+            else
+            {
+                scene.GameObjects.Add(new GameObject());
+                GameObject circle = scene.GameObjects[scene.GameObjects.Count - 1];
+                circle.AddCircleCollider((circle_point_0 - circle_point_1).magnitude);
+                circle.Position = circle_point_0;
+                circle.isstatic = false;
+                circle.AddBody();
+                circle.body.MomentOfInertia = 0;
+                circle.body.Mass = 1;
+                circle.body.StaticFriction = 0;
+                circle.body.DynamicFriction = 0;
+
+                circle_creating = false;
+
+                button5.Text = "start circle creating";
             }
         }
     }
