@@ -77,6 +77,8 @@ namespace Engine
         }
         #endregion
 
+        public const float PI = 3.141592653589793238462643f;
+
         public struct Vector2
         {
             public float x;

@@ -10,7 +10,6 @@ using System.Windows.Forms;
 using Engine;
 using static Engine.Math;
 
-
 namespace GraphicsRenderer
 {
     public partial class Form1 : Form
@@ -26,41 +25,30 @@ namespace GraphicsRenderer
             scene = Core.GetScene(0);
             scene.SetDestroyBounds(null, null, null, -10000);
 
-            scene.GameObjects.Add(new GameObject());
-            GameObject platform = scene.GameObjects[scene.GameObjects.Count - 1];
+            GameObject platform = new GameObject();
             platform.AddPolygonCollider(new Vector2[]
             {
                 new Vector2(10, 10),
                 new Vector2(10, 50),
-                new Vector2(500, 50),
-                new Vector2(500, 10)
+                new Vector2(700, 50),
+                new Vector2(700, 10)
             });
             platform.isstatic = true;
-            platform.AddBody();
-            platform.body.MomentOfInertia = 0;
-            platform.body.Mass = 0;
-            platform.body.StaticFriction = 0;
-            platform.body.DynamicFriction = 0;
-            platform.body.Bouncity = 0;
-            
-            scene.GameObjects.Add(new GameObject());
-            GameObject wall_left = scene.GameObjects[scene.GameObjects.Count - 1];
+            scene.GameObjects.Add(platform);
+        /*
+            GameObject wall_left = new GameObject();
             wall_left.AddPolygonCollider(new Vector2[]
             {
-                new Vector2(500, 200),
-                new Vector2(500, 50),
-                new Vector2(510, 50),
-                new Vector2(510, 200)
+                new Vector2(700, 200),
+                new Vector2(700, 50),
+                new Vector2(710, 50),
+                new Vector2(710, 200)
             });
             wall_left.isstatic = true;
-            wall_left.AddBody();
-            wall_left.body.MomentOfInertia = 0;
-            wall_left.body.Mass = 0;
-            wall_left.body.StaticFriction = 0.2f;
-            wall_left.body.DynamicFriction = 0.2f;
+            scene.GameObjects.Add(wall_left);
 
-            scene.GameObjects.Add(new GameObject());
-            GameObject wall_right = scene.GameObjects[scene.GameObjects.Count - 1];
+  
+            GameObject wall_right = new GameObject();
             wall_right.AddPolygonCollider(new Vector2[]
             {
                 new Vector2(0, 200),
@@ -69,42 +57,56 @@ namespace GraphicsRenderer
                 new Vector2(10, 200)
             });
             wall_right.isstatic = true;
-            wall_right.AddBody();
-            wall_right.body.MomentOfInertia = 0;
-            wall_right.body.Mass = 0;
-            wall_right.body.StaticFriction = 0.2f;
-            wall_right.body.DynamicFriction = 0.2f;
+            scene.GameObjects.Add(wall_right);
+            */
             //*******
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            GameObject.Draw(pictureBox1);
-
-            Invalidate();
-        }
-
-        private void button2_Click(object sender, EventArgs e)
-        {
-            Core.GetScene(0).Tick(0.01f);
-
-            GameObject.Draw(pictureBox1);
-
-            Invalidate();
         }
 
         private void button3_Click(object sender, EventArgs e)
         {
+            button3.Text = timer1.Enabled ? "enable ticks" : "disable ticks";
+
             timer1.Enabled = !timer1.Enabled;
         }
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            Core.GetScene(0).Tick(0.01f);
-            
-            GameObject.Draw(pictureBox1);
+            for(int i = 0; i < 5; i++)
+            Core.GetScene(0).Tick(0.02f);
 
             Invalidate();
+        }
+
+        void Draw_Scene()
+        {
+            foreach (var go in Core.GetScene(0).GameObjects)
+            {
+                go.collider.UpdatePosAndRotation(go.Position, go.Rotation);
+            }
+
+            Bitmap img = new Bitmap(pictureBox1.Width, pictureBox1.Height);
+            Graphics g = Graphics.FromImage(img);
+            g.Clear(Color.Black);
+
+            foreach (var go in Core.GetScene(0).GameObjects)
+            {
+                if (go.collider.GetType() == typeof(Circle))
+                {
+                    Circle coll = go.collider as Circle;
+
+                    g.DrawEllipse(new Pen(Color.Green), new RectangleF(go.Position.x - coll.Radius, go.Position.y - coll.Radius, coll.Radius * 2, coll.Radius * 2));
+                }
+                else if (go.collider.GetType() == typeof(Polygon))
+                {
+                    Polygon coll = go.collider as Polygon;
+
+                    g.DrawPolygon(new Pen(Color.Green), (coll.Verts.Select(vec => new PointF(vec.x, vec.y)).ToArray()));
+                }
+
+            }
+
+            img.RotateFlip(RotateFlipType.RotateNoneFlipY);
+            pictureBox1.Image = img;
         }
 
         bool poly_creating = false;
@@ -121,61 +123,72 @@ namespace GraphicsRenderer
             {
                 scene.GameObjects.Add(new GameObject());
                 GameObject poly = scene.GameObjects[scene.GameObjects.Count - 1];
-                poly.AddPolygonCollider(new_poly.ToArray());
+
+                Vector2[] verts = GetConvexHull(new_poly.ToArray());
+
+                poly.AddPolygonCollider(verts);
+
                 poly.Position = Vector2.zero;
                 poly.isstatic = false;
-                poly.AddBody();
-                poly.body.Mass = GetPolyArea(new_poly) / 10000;
+                poly.body.SetAutoMass(1);
                 poly.body.DynamicFriction = 0;
                 poly.body.StaticFriction = 0;
                 poly.body.Bouncity = 0;
-                poly.body.CenterOfMass_local = GetPolyCOM(new_poly);
+                poly.body.SetAutoMomentOfInertia(1);
 
-                float moment_inertia = 0;
-
-                for(int i = 0; i < new_poly.Count; i++)
-                {
-                    moment_inertia += (poly.body.CenterOfMass_local - new_poly[i]).sqrMagnitude;
-                }
-
-                poly.body.MomentOfInertia = moment_inertia / new_poly.Count;
                 button4.Text = "start poly creating";
             }
 
             poly_creating = !poly_creating;
         }
 
-        Vector2 GetPolyCOM(List<Vector2> poly)
-        {
-            Vector2 com = Vector2.zero;
-
-            for(int i = 0; i < poly.Count; i++)
-            {
-                com += poly[i];
-            }
-
-            com /= poly.Count;
-
-            return com;
-        }
-
-        float GetPolyArea(List<Vector2> poly)
-        {
-            float area = 0;
-
-            for(int i = 0; i < poly.Count; i++)
-            {
-                area += Vector2.CrossProduct(poly[i], poly[(i + 1) % poly.Count]); 
-            }
-
-            return abs(area) / 2;
-        }
+        Random rand = new Random();
 
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
+            if(crt_rnd_shps)
+            {             
+                if(rand.Next(4) == 0)
+                {
+                    //circle                   
+                    GameObject circle = new GameObject();
+                    circle.AddCircleCollider(rand.Next(50) + 3);
+                    circle.Position = new Vector2(e.X, pictureBox1.Height - e.Y);
+                    circle.body.SetAutoMass(1);
+                    circle.body.SetAutoMomentOfInertia(1);
+                    scene.GameObjects.Add(circle);
+                }
+                else
+                {
+                    //polygon
+                    int vert_count = rand.Next(50) + 5;
+                    Vector2[] verts = new Vector2[vert_count];
+                    for(int i = 0; i < vert_count; i++)
+                    {
+                        verts[i] = new Vector2(e.X + (rand.Next(100) - 50), (pictureBox1.Height - e.Y) + (rand.Next(100) - 50));
+                    }
+
+                    verts = GetConvexHull(verts);                   
+
+                    if(verts.Length <= 2)
+                    {
+                        return;
+                    }
+
+                    GameObject poly = new GameObject();
+                    poly.AddPolygonCollider(verts);
+                    poly.Position = Vector2.zero;
+                    poly.body.SetAutoMass(1);
+                    poly.body.SetAutoMomentOfInertia(1);
+                    scene.GameObjects.Add(poly);
+                }
+                return;
+            }
+
             if (poly_creating)
             {
                 new_poly.Add(new Vector2(e.X, pictureBox1.Height - e.Y));
+                return;
             }
 
             if(circle_creating)
@@ -188,6 +201,7 @@ namespace GraphicsRenderer
                 {
                     circle_point_1 = new Vector2(e.X, pictureBox1.Height - e.Y);
                 }
+                return;
             }
         }
 
@@ -207,22 +221,134 @@ namespace GraphicsRenderer
                 button5.Text = "finish circle creating";
             }
             else
-            {
-                scene.GameObjects.Add(new GameObject());
-                GameObject circle = scene.GameObjects[scene.GameObjects.Count - 1];
+            {        
+                GameObject circle = new GameObject();
                 circle.AddCircleCollider((circle_point_0 - circle_point_1).magnitude);
                 circle.Position = circle_point_0;
-                circle.isstatic = false;
-                circle.AddBody();
-                circle.body.MomentOfInertia = 0;
-                circle.body.Mass = 1;
-                circle.body.StaticFriction = 0;
-                circle.body.DynamicFriction = 0;
+                circle.body.SetAutoMass(1);
+                scene.GameObjects.Add(circle);
 
                 circle_creating = false;
 
                 button5.Text = "start circle creating";
             }
+        }
+
+
+
+        Vector2[] GetConvexHull(Vector2[] new_poly)
+        {
+            return ConvexHull((new_poly.ToList().ConvertAll((x)=>new Point((int)x.x, (int)x.y))).ToArray()).ToList().ConvertAll((x)=>new Vector2(x.X, x.Y)).ToArray();
+        }
+
+        public static IEnumerable<Point> ConvexHull(Point[] points)
+        {
+            var upper = new List<Point>();
+            var lower = new List<Point>();
+
+            points = points.OrderBy(p => p.X).ThenBy(p => p.Y).ToArray();
+
+            upper.AddRange(points.Take(2));
+            for (int i = 2; i < points.Count(); i++)
+            {
+                upper.Add(points[i]);
+                while (upper.Count() > 2 && !IsRightTurn(upper.ElementAt(upper.Count - 1),
+                upper.ElementAt(upper.Count - 2), upper.ElementAt(upper.Count - 3)))
+                {
+                    upper.RemoveAt(upper.Count() - 2);
+                }
+            }
+
+            lower.Add(points.ElementAt(points.Count() - 1));
+            lower.Add(points.ElementAt(points.Count() - 2));
+            for (int i = points.Count() - 2; i >= 0; i--)
+            {
+                lower.Add(points.ElementAt(points.Count() - 1));
+                while (lower.Count() > 2 && !IsRightTurn(lower.ElementAt(lower.Count - 1),
+                lower.ElementAt(lower.Count - 2), lower.ElementAt(lower.Count - 3)))
+                {
+                    lower.RemoveAt(lower.Count() - 2);
+                }
+            }
+            lower.RemoveAt(lower.Count() - 1);
+            lower.RemoveAt(0);
+
+            return upper.Concat(lower);
+        }
+        public static bool IsRightTurn(Point a, Point b, Point c)
+        {
+            var seg = new LineSegment(a, b);
+            return WherePoint(seg, c) < 0;
+        }
+        public static int WherePoint(LineSegment vector, Point p)
+        {
+            return (vector.Q.X - vector.P.X) * (p.Y - vector.P.Y)
+            - (vector.Q.Y - vector.P.Y) * (p.X - vector.P.X);
+        }
+        public class LineSegment
+        {
+            public Point P { get; private set; }
+            public Point Q { get; private set; }
+
+            public LineSegment(Point p, Point q)
+            {
+                this.P = p;
+                this.Q = q;
+            }
+        }
+        public class PointNamed
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
+            public string Name { get; set; }
+            public Point Point;
+
+            public PointNamed(string name, Point point)
+            {
+                this.Name = name;
+                this.X = point.X;
+                this.Y = point.Y;
+                this.Point = point;
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        bool crt_rnd_shps;
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            crt_rnd_shps = !crt_rnd_shps;
+
+            button1.Text = crt_rnd_shps ? "creatingRandomShapes on" : "creatingRandomShapes off";
+        }
+
+        private void timer2_Tick(object sender, EventArgs e)
+        {
+            if(draw)
+            Draw_Scene();
+        }
+
+        bool draw;
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            draw = !draw;
+
+            button2.Text = draw ? "disable draw" : "enable draw";
         }
     }
 }

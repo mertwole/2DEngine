@@ -11,9 +11,6 @@ namespace Engine
     {
         public static void Broad_Phase(GameObject a, GameObject b)
         {
-            if (a.body == null || b.body == null)//collision resolving requires body to work
-                return;
-
             if (a.isstatic && b.isstatic)//if gameobjects are static they cant collide
                 return;
 

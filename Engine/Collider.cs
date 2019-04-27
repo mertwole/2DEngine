@@ -7,7 +7,7 @@ using static Engine.Math;
 
 namespace Engine
 {
-    abstract class Collider
+    public abstract class Collider
     {
         public int CollisionMask = 1;
 
@@ -15,7 +15,7 @@ namespace Engine
 
         public abstract void UpdatePosAndRotation(Vector2 GameObjectPos, float rotation);
 
-        public abstract AABB GetBoundingBox();
+        internal abstract AABB GetBoundingBox();
     }
 
     struct AABB
@@ -30,7 +30,7 @@ namespace Engine
         }
     }
 
-    class Circle : Collider
+    public class Circle : Collider
     {
         public Vector2 Center { get; private set; }
 
@@ -41,7 +41,7 @@ namespace Engine
             Center = GameObjectPos;
         }
 
-        public override AABB GetBoundingBox()
+        internal override AABB GetBoundingBox()
         {
             Vector2 r = new Vector2(Radius, Radius);
             return new AABB(Center - r, Center + r);
@@ -53,7 +53,7 @@ namespace Engine
         }
     }
 
-    class Polygon : Collider
+    public class Polygon : Collider
     {
         Vector2[] origin_verts;
         public Vector2[] Verts { get; private set; }
@@ -61,7 +61,7 @@ namespace Engine
         AABB bounding_box = new AABB();
         bool bounding_box_actual;
 
-        public override AABB GetBoundingBox()
+        internal override AABB GetBoundingBox()
         {
             if (bounding_box_actual)
                 return bounding_box;

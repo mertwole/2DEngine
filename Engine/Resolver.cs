@@ -82,7 +82,7 @@ namespace Engine
             { 
                 //positional correction
                 
-                float percent = 0.1f;
+                float percent = 0.6f;
                 float slop = 0.01f;
 
                 Vector2 correction = ((max(contact.depth - slop, 0)

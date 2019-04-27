@@ -11,10 +11,28 @@ namespace Engine
 {
     public class GameObject
     {
-        internal Collider collider;
-        public Body body;
+        public Collider collider { get; internal set; }
+        public Body body = new Body();
 
-        public bool isstatic = false;
+        public GameObject()
+        {
+            body.gameobject = this;
+        }
+
+        public bool isstatic {
+            get { return is_static; }
+            set
+            {
+                is_static = value;
+
+                if(is_static)
+                {
+                    body.Mass = 0;
+                    body.MomentOfInertia = 0;
+                }
+            }
+        }
+        bool is_static;
 
         public Vector2 Position;
 
@@ -23,54 +41,29 @@ namespace Engine
         public void AddCircleCollider(float radius)
         {
             collider = new Circle(radius);
+            body.CenterOfMass_local = Vector2.zero;
             collider.gameobject = this;
         }
 
         public void AddPolygonCollider(Vector2[] verts)
         {
             collider = new Polygon(verts);
+            body.CenterOfMass_local = GetPolyCOM(verts) - Position;
             collider.gameobject = this;
         }
 
-        public void AddBody()
+        Vector2 GetPolyCOM(Vector2[] poly)
         {
-            body = new Body();
-        }
+            Vector2 com = Vector2.zero;
 
-        //************test***************
-
-        public static void Draw(PictureBox picturebox)
-        {
-            foreach (var go in Core.GetScene(0).GameObjects)
+            for (int i = 0; i < poly.Length; i++)
             {
-                go.collider.UpdatePosAndRotation(go.Position, go.Rotation);
+                com += poly[i];
             }
 
-            Bitmap img = new Bitmap(picturebox.Width, picturebox.Height);
-            Graphics g = Graphics.FromImage(img);
-            g.Clear(Color.Black);
+            com /= poly.Length;
 
-            foreach (var go in Core.GetScene(0).GameObjects)
-            {
-                if (go.collider.GetType() == typeof(Circle))
-                {
-                    Circle coll = go.collider as Circle;
-
-                    g.DrawEllipse(new Pen(Color.Green), new RectangleF(go.Position.x - coll.Radius, go.Position.y - coll.Radius, coll.Radius * 2, coll.Radius * 2));
-                }
-                else if(go.collider.GetType() == typeof(Polygon))
-                {
-                    Polygon coll = go.collider as Polygon;
-
-                    g.DrawPolygon(new Pen(Color.Green), (coll.Verts.Select(vec => new PointF(vec.x, vec.y)).ToArray()));
-                }
-
-            }
-          
-            img.RotateFlip(RotateFlipType.RotateNoneFlipY);
-            picturebox.Image = img;
-        }
-
-        //*******************************
+            return com;
+        }  
     }
 }

@@ -11,6 +11,8 @@ namespace Engine
     {
         public List<GameObject> GameObjects = new List<GameObject>();
 
+        public Vector2 Gravity = new Vector2(0, -10);
+
         struct DestroyBounds
         {
             public bool DestroyPoint(Vector2 point)
@@ -100,7 +102,7 @@ namespace Engine
             {
                 if (!go.isstatic)
                 {
-                    go.body.Force += new Vector2(0, -10);
+                    go.body.Force += Gravity * go.body.Mass;
                 }
             }
         }
